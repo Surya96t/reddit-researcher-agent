@@ -1,0 +1,19 @@
+[project]
+name = "reddit_researcher_backend"
+version = "0.1.0"
+description = "Backend for the AI Reddit Researcher Agent"
+authors = [{ name = "Surya Prakash", email = "surya96t@gmail.com" }]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic-settings",
+    "python-dotenv",
+]
+
+[tool.uv.sources]
+# This section is optional but good practice, it tells uv where to get packages from.
+pypi = { url = "https://pypi.org/simple" }
+
+[tool.setuptools]
+packages = ["app"]

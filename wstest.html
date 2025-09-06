@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WebSocket Test</title>
+</head>
+<body>
+<h1>WebSocket Test for AI Researcher</h1>
+<p>Check the browser's developer console (F12) and your FastAPI server's terminal for logs.</p>
+code
+Code
+<script>
+    // Generate a random UUID for testing
+    const taskId = '123e4567-e89b-12d3-a456-426614174000';
+    const wsUrl = `ws://127.0.0.1:8000/api/v1/ws/research/${taskId}`;
+
+    console.log(`Attempting to connect to: ${wsUrl}`);
+    
+    const socket = new WebSocket(wsUrl);
+
+    // --- Event Listeners ---
+
+    // Fired when the connection is successfully opened
+    socket.onopen = (event) => {
+        console.log('✅ WebSocket connection opened!', event);
+        document.body.style.backgroundColor = '#dff0d8'; // Greenish background on success
+    };
+
+    // Fired when a message is received from the server
+    socket.onmessage = (event) => {
+        console.log(`📩 Message received from server: ${event.data}`);
+    };
+
+    // Fired when an error occurs
+    socket.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        document.body.style.backgroundColor = '#f2dede'; // Reddish background on error
+    };
+
+    // Fired when the connection is closed
+    socket.onclose = (event) => {
+        console.log('🔌 WebSocket connection closed.', event);
+        if (!event.wasClean) {
+            console.error('Connection closed unexpectedly.');
+        }
+    };
+
+</script>
+</body>
+</html>
