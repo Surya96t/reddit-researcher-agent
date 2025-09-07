@@ -1,43 +1,33 @@
-import { ReportViewer } from "@/components/report-viewer";
+// frontend/src/app/report/[taskId]/page.tsx
+
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { InteractiveReportViewer } from "@/components/interactive-report-viewer";
+// --- CHANGE THIS IMPORT ---
+import { FullTaskData } from "@/lib/types";
 
-// Define a type for the expected API response
-interface TaskWithReport {
-    task_id: string;
-    status: string;
-    query: string;
-    report: {
-        id: string;
-        content: string;
-        created_at: string;
-    } | null;
-}
 
-// Function to fetch data server-side
-async function getReport(taskId: string): Promise<TaskWithReport | null> {
+// Function to fetch all data for the report page
+async function getReportData(taskId: string): Promise<FullTaskData | null> {
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/research/${taskId}`, {
-            // Revalidate every 60 seconds, or on-demand
-            next: { revalidate: 60 }
+            cache: 'no-store' // Always fetch the latest data for the report
         });
 
-        if (!res.ok) {
-            return null;
-        }
-        return res.json();
+        if (!res.ok) { return null; }
+        const data = await res.json();
+        return data;
+
     } catch (error) {
-        console.error("Failed to fetch report:", error);
+        console.error("Failed to fetch report data:", error);
         return null;
     }
 }
 
-
-
-export default async function ReportPage({ params }: { params: { taskId: string } }) {
+export default async function ReportPage({ params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await params;
-  const taskData = await getReport(taskId);
+  const taskData = await getReportData(taskId);
 
   if (!taskData || !taskData.report) {
     return (
@@ -62,7 +52,11 @@ export default async function ReportPage({ params }: { params: { taskId: string 
         <Button asChild variant="outline">
           <Link href="/">← Start New Research</Link>
         </Button>
-        <ReportViewer content={taskData.report.content} />
+        {/* --- Use the new interactive component --- */}
+        <InteractiveReportViewer
+          reportContent={taskData.report.content}
+          sourcePosts={taskData.source_posts}
+        />
       </main>
     </>
   );

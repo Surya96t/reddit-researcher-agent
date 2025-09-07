@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+// src/app/api/research/[taskId]/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  request: Request,
-  { params }: { params: { taskId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
     const { taskId } = await params;
@@ -10,14 +12,14 @@ export async function GET(
     const apiResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/research/${taskId}`);
 
     if (!apiResponse.ok) {
-      return NextResponse.json({ error: "Failed to fetch task status" }, { status: apiResponse.status });
+      return NextResponse.json({ error: "Failed to fetch task data" }, { status: apiResponse.status });
     }
 
     const data = await apiResponse.json();
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error("BFF Error:", error);
+    console.error("BFF Error fetching task data:", error);
     return NextResponse.json(
       { error: "An internal server error occurred" },
       { status: 500 }

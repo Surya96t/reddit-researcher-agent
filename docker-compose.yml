@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # --- DATABASE & CACHE SERVICES ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: reddit-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reddit_researcher_db
+    volumes:
+      # This creates a named volume to persist database data across container restarts
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: reddit-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # --- BACKEND SERVICES ---
+  backend:
+    container_name: backend-api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Use the PATH set in Dockerfile, no need to activate venv manually
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+      # Preserve the virtual environment from the image
+      - /app/.venv
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/reddit_researcher_db
+      - REDIS_URL=redis://redis:6379/0
+      # These variables are read from the .env file in the root directory
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
+      - REDDIT_CLIENT_SECRET=${REDDIT_CLIENT_SECRET}
+      - REDDIT_USER_AGENT=${REDDIT_USER_AGENT}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  celery:
+    container_name: celery-worker
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Use the PATH set in Dockerfile, no need to activate venv manually
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    volumes:
+      - ./backend:/app
+      # Preserve the virtual environment from the image
+      - /app/.venv
+    environment:
+      # Uses the same environment variables as the backend API
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/reddit_researcher_db
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDDIT_CLIENT_ID=${REDDIT_CLIENT_ID}
+      - REDDIT_CLIENT_SECRET=${REDDIT_CLIENT_SECRET}
+      - REDDIT_USER_AGENT=${REDDIT_USER_AGENT}
+    depends_on:
+      - backend
+      - redis
+    restart: unless-stopped
+
+  # --- FRONTEND NODE.JS SERVICE ---
+  frontend:
+    container_name: frontend-app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      # Preserve node_modules from the image
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - WATCHPACK_POLLING=true
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# Defines the named volume for persisting PostgreSQL data
+volumes:
+  pgdata:

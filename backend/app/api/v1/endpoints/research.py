@@ -1,95 +1,87 @@
-import uuid
-from typing import AsyncGenerator, List
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
-# CHANGE THESE IMPORTS:
-from app.worker.tasks import run_research_agent
-from app.db.session import AsyncSessionLocal
-from app.db.models import ResearchTask
-from app.db.crud import get_task, get_task_logs
-from datetime import datetime
+# backend/app/api/v1/endpoints/research.py
 
-# Helper for Dependency Injection
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
-        yield session
+import uuid
+import datetime
+from typing import List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field, ConfigDict
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.worker.tasks import run_research_agent
+from app.dependencies import get_db
+from app.db.models import ResearchTask
+from app.db.crud import get_task_with_details
+
 
 # --- Pydantic Models for API Responses ---
-class ReportDetail(BaseModel):
+class TaskLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    type: str
+    message: str
+    data: Dict[str, Any] | None = None
+    created_at: datetime.datetime
+
+class SourcePostResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    url: str
+    score: int
+    num_comments: int
+
+class ExtractedIdeaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    pain_point: str
+    solution_idea: str
+    target_audience: str
+    business_model: str
+    source_post_id: int
+
+class ReportDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     content: str
-    created_at: str
 
-class TaskStatusResponse(BaseModel):
-    task_id: uuid.UUID
+class FullTaskDataResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID 
     status: str
     query: str
-    report: ReportDetail | None = None
+    logs: List[TaskLogResponse]
+    source_posts: List[SourcePostResponse]
+    extracted_ideas: List[ExtractedIdeaResponse]
+    report: ReportDetailResponse | None = None
 
 class ResearchRequest(BaseModel):
     query: str
+    subreddits: str
 
 class TaskCreationResponse(BaseModel):
     task_id: str
     status: str
 
-# --- Add a Pydantic model for the log response ---
-
-class TaskLogResponse(BaseModel):
-    id: int
-    message: str
-    created_at: datetime
-    
 # --- API Router ---
 router = APIRouter()
 
 @router.post("", response_model=TaskCreationResponse, status_code=202)
 async def start_research(request: ResearchRequest, db: AsyncSession = Depends(get_db)):
-    """
-    Creates a research task in the DB and dispatches it to a background worker.
-    """
-    # Create the task in the database first
     new_task = ResearchTask(query=request.query)
     db.add(new_task)
     await db.commit()
     await db.refresh(new_task)
-    
-    # Dispatch the task to Celery
-    run_research_agent.delay(str(new_task.id))
-    
+    run_research_agent.delay(str(new_task.id), request.subreddits)
     return {"task_id": str(new_task.id), "status": new_task.status}
 
-@router.get("/{task_id}", response_model=TaskStatusResponse)
-async def get_research_status(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@router.get("/{task_id}", response_model=FullTaskDataResponse)
+async def get_full_task_data(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """
-
-    Retrieves the status and result of a research task.
+    Retrieves all data for a research task.
     """
-    task = await get_task(db, task_id)
+    task = await get_task_with_details(db, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    report_detail = None
-    if task.report:
-        report_detail = ReportDetail(
-            id=task.report.id,
-            content=task.report.content,
-            created_at=str(task.report.created_at)
-        )
-
-    return {
-        "task_id": task.id,
-        "status": task.status,
-        "query": task.query,
-        "report": report_detail
-    }
-    
-# --- ADD THIS NEW ENDPOINT ---
-@router.get("/{task_id}/logs", response_model=List[TaskLogResponse])
-async def get_logs_for_task(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """
-    Retrieves all log entries for a specific research task.
-    """
-    logs = await get_task_logs(db, task_id)
-    return logs
+    # --- RESTORE THE SIMPLE, RELIABLE RETURN ---
+    return task
