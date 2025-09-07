@@ -15,16 +15,13 @@ export async function POST(request: Request) {
         }
 
         // This is the server-to-server call to our FastAPI backend
-        const apiResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/research`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ query, subreddits }),
-            }
-        );
+        const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/v1/research`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query, subreddits }),
+        });
 
         if (!apiResponse.ok) {
             // Log the error and forward a generic error message

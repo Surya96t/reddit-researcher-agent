@@ -1,7 +1,7 @@
 import uuid
 from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.future import select
 from app.db.models import ResearchTask, Report, TaskLog, SourcePost, ExtractedIdea # <-- Add new models
 
@@ -18,9 +18,9 @@ async def get_task_with_details(db: AsyncSession, task_id: uuid.UUID):
         select(ResearchTask)
         .where(ResearchTask.id == task_id)
         .options(
-            joinedload(ResearchTask.logs),
-            joinedload(ResearchTask.source_posts),
-            joinedload(ResearchTask.extracted_ideas),
+            selectinload(ResearchTask.logs),
+            selectinload(ResearchTask.source_posts),
+            selectinload(ResearchTask.extracted_ideas),
             joinedload(ResearchTask.report) # Also good to explicitly load the report
         )
     )

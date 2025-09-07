@@ -1,3 +1,5 @@
+// frontend/src/app/task/[taskId]/task-view.tsx
+
 "use client";
 
 import useSWR from 'swr';
@@ -69,7 +71,11 @@ export default function TaskView({ taskId }: TaskViewProps) {
   if (error) {
     return (
       <div className="text-center text-red-500 ...">
-        {/* ... error UI ... */}
+        <h2 className="text-2xl font-bold mb-4">Error Loading Task</h2>
+        <p className="mb-4">There was an error loading your research task. Please try again later.</p>
+        <p className="text-sm text-muted-foreground mb-6">
+          {error.message} {error.info ? `- ${error.info}` : ''}
+        </p>
       </div>
     );
   }

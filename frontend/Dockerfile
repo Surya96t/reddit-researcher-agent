@@ -5,14 +5,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies using `npm ci` for consistency
 RUN npm ci
 
 # Copy the rest of the application
 COPY . .
 
-# Expose port
+# Expose the port
 EXPOSE 3000
 
-# Default command
+# Set the default command to run the development server
 CMD ["npm", "run", "dev"]

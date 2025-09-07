@@ -1,5 +1,3 @@
-// src/app/api/research/[taskId]/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -9,7 +7,9 @@ export async function GET(
   try {
     const { taskId } = await params;
 
-    const apiResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/research/${taskId}`);
+    // --- THIS IS THE FIX ---
+    // Use the new, server-side only variable to connect to the backend container.
+    const apiResponse = await fetch(`${process.env.API_BASE_URL}/api/v1/research/${taskId}`);
 
     if (!apiResponse.ok) {
       return NextResponse.json({ error: "Failed to fetch task data" }, { status: apiResponse.status });

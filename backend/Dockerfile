@@ -1,32 +1,17 @@
-# Use a single stage for development
+# Use a single stage for development, starting from a slim Python image
 FROM python:3.12-slim
 
-# Install uv
-RUN pip install uv
-
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Install uv, our fast package manager
+RUN pip install --no-cache-dir uv
 
-# Copy requirements first (for better caching)
-COPY pyproject.toml requirements.txt ./
-
-# Create virtual environment and install dependencies
-RUN uv venv .venv && \
-    .venv/bin/pip install -r requirements.txt
-
-# Set PATH to include the virtual environment
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Copy the application code
+# Copy the source code
 COPY . .
 
-# Install the app in development mode
-RUN .venv/bin/pip install -e .
+# Install dependencies using uv directly into the system Python
+RUN uv pip install -e . --system
 
-# Default command
+# Set the default command for the container.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -60,8 +60,17 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # --- THIS IS THE MODIFIED SECTION ---
+    
+    # Get the db_url from the -x argument passed on the command line, if it exists.
+    db_url = context.get_x_argument(as_dictionary=True).get('db_url')
+    
+    # If the db_url is not provided via the command line, fall back to the alembic.ini file.
+    if db_url is None:
+        db_url = config.get_main_option("sqlalchemy.url")
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        {"sqlalchemy.url": db_url}, # Use the resolved db_url
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
