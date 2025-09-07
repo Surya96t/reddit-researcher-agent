@@ -1,8 +1,6 @@
-"""
-LangChain chains for the research agent.
-"""
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
+# --- Import the centralized settings object ---
 from app.core.config import settings
 from .models import IdeaExtractionList, PostFilter
 from .prompts import extraction_prompt, filter_prompt, analysis_prompt, report_prompt
@@ -10,18 +8,22 @@ from .prompts import extraction_prompt, filter_prompt, analysis_prompt, report_p
 
 # LLM for simple filtering tasks
 filtering_llm = ChatOpenAI(
-    model="gpt-4o-mini",
+    # --- Use the setting ---
+    model=settings.AGENT_FILTER_MODEL,
     temperature=0,
     api_key=settings.OPENAI_API_KEY.get_secret_value()
 )
 
 # A more powerful LLM for complex extraction tasks
 extraction_llm = ChatOpenAI(
-    model="gpt-4o",  # Using a more powerful model
-    temperature=0.2,  # Allow for a little more creativity
+    # --- Use the setting ---
+    model=settings.AGENT_EXTRACTION_MODEL,
+    temperature=0.2,
     api_key=settings.OPENAI_API_KEY.get_secret_value()
 )
 
+
+# --- The rest of this file is already correct and needs no changes ---
 
 # Create the extraction chain using LCEL
 extraction_chain = extraction_prompt | extraction_llm.with_structured_output(IdeaExtractionList)

@@ -17,3 +17,7 @@ pypi = { url = "https://pypi.org/simple" }
 
 [tool.setuptools]
 packages = ["app"]
+
+[tool.pytest.ini_options]
+# Automatically run all 'async def' test functions with asyncio
+asyncio_mode = "auto"

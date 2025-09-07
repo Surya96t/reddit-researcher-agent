@@ -1,13 +1,15 @@
+// frontend/src/app/api/research/route.ts
+
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { query } = body;
+        const { query, subreddits } = body;
 
-        if (!query) {
+        if (!query || !subreddits) {
             return NextResponse.json(
-                { error: "Query is required" },
+                { error: "Query and subreddits are required" },
                 { status: 400 }
             );
         }
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ query }),
+                body: JSON.stringify({ query, subreddits }),
             }
         );
 

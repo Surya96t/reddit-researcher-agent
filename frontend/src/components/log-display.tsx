@@ -1,16 +1,14 @@
-"use client";
+// frontend/src/components/log-display.tsx
+
+"use-client";
 
 import { useEffect, useRef } from 'react';
+// --- CHANGE THIS IMPORT ---
+import { TaskLog } from "@/lib/types";
 
-// Define a type for a single log entry
-export interface LogEntry {
-  id: number;
-  message: string;
-  created_at: string;
-}
 
 interface LogDisplayProps {
-  logs: LogEntry[];
+  logs: TaskLog[];
 }
 
 export function LogDisplay({ logs }: LogDisplayProps) {

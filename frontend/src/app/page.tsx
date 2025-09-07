@@ -1,45 +1,46 @@
+// frontend/src/app/page.tsx
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ResearchForm } from "@/components/research-form";
+import { toast } from "sonner";
 
 export default function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const handleFormSubmit = async (query: string) => {
+  // Update the function signature to accept subreddits
+  const handleFormSubmit = async (query: string, subreddits: string) => {
     setIsSubmitting(true);
     
     try {
-      // --- Call our new BFF API route ---
       const response = await fetch('/api/research', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query }),
+        // --- Add subreddits to the request body ---
+        body: JSON.stringify({ query, subreddits }),
       });
 
       if (!response.ok) {
-        // Handle API errors (e.g., show a toast notification)
-        console.error("Failed to start task");
-        // We could add user-facing error handling here
+        toast.error("Failed to start the research task. Please try again later.");
+        console.error("Failed to start task, server responded with:", response.status);
         setIsSubmitting(false);
         return;
       }
 
       const result = await response.json();
       const { task_id } = result;
-
-      // Redirect to the task page with the real task ID
       router.push(`/task/${task_id}`);
 
     } catch (error) {
+      toast.error("A network error occurred. Please check your connection.");
       console.error("Submission error:", error);
       setIsSubmitting(false);
-      // Handle fetch errors (e.g., network issues)
     }
   };
 
@@ -58,7 +59,6 @@ export default function HomePage() {
             Enter a topic to find out what people want built.
           </p>
         </div>
-        
         <ResearchForm onSubmit={handleFormSubmit} isSubmitting={isSubmitting} />
       </main>
     </>

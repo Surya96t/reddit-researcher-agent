@@ -8,8 +8,8 @@ from app.db.crud import get_task_sync, update_task_status_sync, create_report_sy
 from app.db.crud import create_task_log_sync
 
 # --- REVERT THE DECORATOR AND SIGNATURE ---
-@celery.task(throws=(Exception,)) # <-- Add throws=(Exception,)
-def run_research_agent(task_id: str): # <-- Remove self and bind=True
+@celery.task
+def run_research_agent(task_id: str, subreddits_str: str):
     """
     The main Celery task to run the research agent graph.
     """
@@ -21,15 +21,23 @@ def run_research_agent(task_id: str): # <-- Remove self and bind=True
         if not task:
             print(f"Task {task_id} not found.")
             return
+        
+        # --- Parse the subreddit string into a list ---
+        # Basic cleaning: remove whitespace and filter out empty strings
+        subreddits_list = [s.strip() for s in subreddits_str.split(',') if s.strip()]
+        if not subreddits_list:
+            # Handle case where user enters empty/invalid string
+            subreddits_list = ["SomebodyMakeThis", "startups"] # Fallback to default
+            create_task_log_sync(db, task_id_uuid, 'WARNING', "No valid subreddits provided. Falling back to defaults.")
 
-        create_task_log_sync(db, task_id_uuid, f"Starting research agent for query: '{task.query}'")
+        create_task_log_sync(db, task_id_uuid, 'STEP', f"Starting research agent for query: '{task.query}'")
         update_task_status_sync(db, task_id_uuid, "IN_PROGRESS")
 
         initial_state = {
             "task_id": task_id_uuid,
             "db": db, # <-- Pass the db session into the state
             "query": task.query,
-            "subreddits": ["SomebodyMakeThis", "startups", "Entrepreneur"]
+            "subreddits": subreddits_list
         }
 
         final_state = agent_app.invoke(initial_state)
@@ -42,7 +50,7 @@ def run_research_agent(task_id: str): # <-- Remove self and bind=True
     except Exception as e:
         print(f"Error processing task {task_id}: {e}")
         update_task_status_sync(db, task_id_uuid, "FAILED")
-        create_task_log_sync(db, task_id_uuid, f"Error processing task: {e}")
+        create_task_log_sync(db, task_id_uuid, 'ERROR', f"Error processing task: {e}")
         # --- REMOVE raise e; let the decorator handle it ---
         raise # Using `raise` by itself re-raises the caught exception
         

@@ -1,8 +1,10 @@
+// src/app/task/[taskId]/page.tsx
+
 import { ThemeToggle } from "@/components/theme-toggle";
 import TaskView from "./task-view";
 
 // This is the parent Server Component
-export default async function TaskPage({ params }: { params: { taskId: string } }) {
+export default async function TaskPage({ params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await params;
 
   return (

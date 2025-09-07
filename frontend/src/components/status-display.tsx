@@ -5,7 +5,7 @@ import { CheckCircle, CircleDashed, AlertCircle } from "lucide-react";
 
 // Define a type for our task object for type safety
 export interface Task {
-  task_id: string;
+  id: string;
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
   query: string;
 }

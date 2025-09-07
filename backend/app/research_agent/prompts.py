@@ -1,6 +1,6 @@
-"""
-Prompt templates for the research agent.
-"""
+# backend/app/research_agent/prompts.py
+
+
 from langchain_core.prompts import ChatPromptTemplate
 
 
